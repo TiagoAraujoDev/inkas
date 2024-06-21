@@ -16,6 +16,8 @@ const jwksRsa = require("jwks-rsa");
 
 // const db = require("./db");
 const debug = require("./debug.js");
+const model = require("./middleware/debug.js");
+const debugtool = require("./middleware/debug.js");
 // const action = require('./action');
 const config = require("./config.js");
 
@@ -48,11 +50,10 @@ app.use(
   }),
 );
 
-/* if (config.blacklist.length) {
+if (config.blacklist.length) {
 	const delist = require("./middleware/delist");
 	app.use(delist({ blacklist: config.blacklist, whitelist: config.whitelist }));
-} */
-
+}
 ///////////////////////////////////////////////////////////////////////////////
 // Use Auth0 middleware
 ///////////////////////////////////////////////////////////////////////////////

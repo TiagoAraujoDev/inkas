@@ -67,26 +67,26 @@ router.patch(`/:${idAttribute}`, function (req, res, _next) {
 });
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-router.put("/:role/perms", (req, res, _next) => {
-  const data = _.pick({ ...req.params, ...req.body }, ["role", "perm"]);
-  db("auth.role_perms")
-    .insert(data)
-    .onConflict()
-    .ignore()
-    .then(() => res.sendStatus(204))
-    .catch((err) => res.status(404).jsonp(err));
+router.put("/:role/perms", async (req, res, _next) => {
+  try {
+    const data = _.pick({ ...req.params, ...req.body }, ["role", "perm"]);
+    await db("auth.role_perms").insert(data).onConflict().ignore();
+    return res.status(204).send();
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-router.delete("/:role/perms", (req, res, _next) => {
-  const data = _.pick({ ...req.params, ...req.body }, ["role", "perm"]);
-
-  db("auth.role_perms")
-    .where(data)
-    .del()
-    .then(() => res.status(200).send())
-    .catch((err) => res.status(404).jsonp(err));
+router.delete("/:role/perms", async (req, res, _next) => {
+  try {
+    const data = _.pick({ ...req.params, ...req.body }, ["role", "perm"]);
+    await db("auth.role_perms").where(data).del();
+    return res.status(204).send();
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ///////////////////////////////////////////////////////////////////////////////

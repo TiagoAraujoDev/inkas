@@ -7,7 +7,7 @@ const router = express.Router();
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-router.get("/", function (req, res, _next) {
+router.get("/", async (req, res, _next) => {
   db("auth.users")
     .select()
     .where(req.query || {})
@@ -183,29 +183,26 @@ router.get("/scopes/:username", function (req, res, _next) {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-router.put("/:user_id/roles", (req, res, _next) => {
-  const data = _.pick({ ...req.params, ...req.body }, ["user_id", "role"]);
-
-  db("auth.user_roles")
-    .insert(data)
-    .onConflict()
-    .ignore()
-    .then(() => res.sendStatus(204))
-    .catch((err) => res.status(404).jsonp(err));
+router.put("/:user_id/roles", async (req, res, _next) => {
+  try {
+    const data = _.pick({ ...req.params, ...req.body }, ["user_id", "role"]);
+    await db("auth.user_roles").insert(data).onConflict().ignore();
+    return res.sendStatus(204);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-router.delete("/:user_id/roles", (req, res, _next) => {
-  const data = _.pick({ ...req.params, ...req.body }, ["user_id", "role"]);
-  const user_id = _.parseInt(data.user_id);
-  const { role } = data;
-
-  db("auth.users_roles")
-    .where({ user_id, role })
-    .del()
-    .then(() => res.status(200).send())
-    .catch((err) => res.status(404).jsonp(err));
+router.delete("/:user_id/roles", async (req, res, _next) => {
+  try {
+    const data = _.pick({ ...req.params, ...req.body }, ["user_id", "role"]);
+    await db("auth.user_roles").where(data).del();
+    return res.sendStatus(204);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ///////////////////////////////////////////////////////////////////////////////

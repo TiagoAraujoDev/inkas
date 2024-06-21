@@ -1,14 +1,15 @@
 "use strict";
 
-const db = require("../db.js");
 const express = require("express");
+const _ = require("lodash");
+const db = require("../db.js");
 const router = express.Router();
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-const model = (/** @type {{ models: string; }} */ p) => {
+const model = (/** @type {{ model: string; }} */ p) => {
   return {
     ports: { tableName: "smart.ports", idAttribute: "port_id" },
     berths: { tableName: "smart.berths", idAttribute: "berth_id" },
@@ -22,92 +23,94 @@ const model = (/** @type {{ models: string; }} */ p) => {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Fetch ALL <models>
-router.get("/:models", function (req, res, _next) {
-  const m = model(req.params);
-  db(m.tableName)
-    .select()
-    .where(req.query || {})
-    .then((out) => res.status(200).jsonp(out))
-    .catch((err) => res.status(404).jsonp(err));
+router.get("/:models", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "resource not found!" });
+    const users = await db(m.tableName)
+      .select()
+      .where(req.query || {});
+    if (!users.length !== 0) return res.status(400).json(users);
+    return res.status(200).jsonp(users);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
 // Fetch One <model>
-router.get("/:models/:model_id", function (req, res, _next) {
-  const m = model(req.params);
-  const id = { [m.idAttribute]: req.params.model_id };
-
-  db(m.tableName)
-    .first()
-    .where(id)
-    .then((out) => {
-      if (!out) {
-        console.log("here");
-        throw new Error("user not found");
-      } else {
-        return res.status(200).jsonp(out);
-      }
-    })
-    .catch((err) => {
-      return res.status(404).json(err);
-    });
+router.get("/:models/:model_id", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "Model not found" });
+    const id = { [m.idAttribute]: req.params.model_id };
+    const user = await db(m.tableName).first().where(id);
+    if (!user) return res.status(400).json({ message: "User not found" });
+    return res.status(200).json(user);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
 // Create a new <model> an returns its id
-router.post("/:models", function (req, res, _next) {
-  // WARN: Should allow to create two users with the same info
-  const m = model(req.params);
-
-  db(m.tableName)
-    .insert(req.body)
-    .returning("*")
-    .then((out) => res.status(201).jsonp(out[0]))
-    .catch((err) => res.status(404).jsonp(err));
+router.post("/:models", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "Model not found" });
+    const user = await db(m.tableName).insert(req.body).returning("*");
+    return res.status(201).jsonp(user[0]);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
 // Update a model by its id and return it
-router.put("/:models/:model_id", function (req, res, _next) {
-  // WARN: Responde with a 200 OK when doesn't find a user
-  const m = model(req.params);
-  const id = { [m.idAttribute]: req.params.model_id };
-
-  db(m.tableName)
-    .update(req.body)
-    .returning("*")
-    .where(id)
-    .then((out) => res.status(200).jsonp(out[0]))
-    .catch((err) => res.status(404).jsonp(err));
+router.put("/:models/:model_id", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "Model not found" });
+    const id = { [m.idAttribute]: req.params.model_id };
+    const user = await db(m.tableName)
+      .update(req.body)
+      .returning("*")
+      .where(id);
+    return res.status(201).jsonp(user[0]);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
 // Update a model by its id and return it
-router.patch("/:models/:model_id", function (req, res, _next) {
-  // WARN: Responde with a 200 OK when doesn't find a user
-  const m = model(req.params);
-  const id = { [m.idAttribute]: req.params.model_id };
-
-  db(m.tableName)
-    .update(req.body, { patch: true })
-    .returning("*")
-    .where(id)
-    .then((out) => res.status(200).jsonp(out[0]))
-    .catch((err) => res.status(404).jsonp(err));
+router.patch("/:models/:model_id", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "Model not found" });
+    const id = { [m.idAttribute]: req.params.model_id };
+    const user = await db(m.tableName)
+      .update(req.body, { patch: true })
+      .returning("*")
+      .where(id);
+    return res.status(200).jsonp(user[0]);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
 // Delete a <model> by its id
-router.delete("/:models/:model_id", function (req, res, _next) {
-  const m = model(req.params);
-  const id = { [m.idAttribute]: req.params.model_id };
-
-  db(m.tableName)
-    .del()
-    .returning("*")
-    .where(id)
-    .then((out) => res.status(200).jsonp(out[0]))
-    .catch((err) => res.status(404).jsonp(err));
+router.delete("/:models/:model_id", async (req, res, _next) => {
+  try {
+    const m = model(req.params);
+    if (!m) return res.status(400).json({ message: "Model not found" });
+    const id = { [m.idAttribute]: req.params.model_id };
+    const user = await db(m.tableName).del().returning("*").where(id);
+    return res.status(200).jsonp(user[0]);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
 });
 
 ////////////////////////////////////////////////////
